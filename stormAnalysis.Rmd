@@ -15,31 +15,34 @@ stormData <- read.csv("repdata-data-StormData.csv.bz2")
 selectData <- stormData[,c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "CROPDMG")]
 
 getSortedSums <- function(storm, value1, value2) {
+	subStorm <- filter(storm, value1 > 0 | value2 > 0)[,c("EVTYPE",value1,value2)]
 	processedData <- data.frame()
-	for(x in unique(selectData$EVTYPE)) {
-		singleSet <- subset(selectData, EVTYPE == x)
+	for(x in unique(subStorm$EVTYPE)) {
+		singleSet <- filter(subStorm, EVTYPE == x)
 		processedData <- rbind(processedData, cbind(x, sum(singleSet[,value1]), sum(singleSet[,value2])))
 	}
 	for(n in 2:3){
 		processedData[,n] <- as.numeric(as.character(processedData[,n]))
 	}
 	colnames(processedData) <- c("EVTYPE", value1, value2)
-	arrange(processedData, desc(FATALITIES), desc(INJURIES))[1:10,]
+	processedData
+}
+
+getStackedGraph <- function(top10) {
+	plotMe <- melt(top10, id.var = "EVTYPE")
+	
+	ggplot(plotMe, aes(x=EVTYPE, y=value, fill = variable)) +
+		geom_bar(stat = "identity") +
+		theme(axis.text.x = element_text(angle = 90, hjust = 1))
 }
 
 q1top10 <- getSortedSums(selectData, "FATALITIES", "INJURIES")
-
-q1top10 <- melt(q1top10, id.var = "EVTYPE")
-ggplot(q1top10, aes(x=EVTYPE, y=value, fill = variable)) +
-	geom_bar(stat = "identity") +
-	theme(axis.text.x = element_text(angle = 90, hjust = 1))
+q1top10 <- arrange(q1top10, desc(FATALITIES), desc(INJURIES))[1:10,]
+getStackedGraph(q1top10)
 
 q2top10 <- getSortedSums(selectData, "PROPDMG", "CROPDMG")
-
-q2top10 <- melt(q2top10, id.var = "EVTYPE")
-ggplot(q2top10, aes(x=EVTYPE, y=value, fill = variable)) +
-	geom_bar(stat = "identity") +
-	theme(axis.text.x = element_text(angle = 90, hjust = 1))
+q2top10 <- arrange(q2top10, desc(PROPDMG), desc(CROPDMG))[1:10,]
+getStackedGraph(q2top10)
 
 ```
 
